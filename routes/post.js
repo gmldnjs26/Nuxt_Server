@@ -52,4 +52,56 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
   }
 });
 
+// 댓글 가져오기
+router.get('/:id/comments', async (req, res, next) => {
+  try {
+    const post = await db.Post.findOne({ where: { id: req.params.id } });
+    if(!post) {
+      return res.status(404).send('게시물이 존재하지않습니다.');
+    }
+    const comments = await db.Comment.findAll({
+      where: {
+        PostId: req.params.id,
+      },
+      include: [{
+        model: db.User,
+        attributes:['id','nickname'],
+      }],
+      order: [['createdAt', 'ASC']], // 다른 정렬조건도 있을수있으니깐
+    });
+    res.json(comments)
+  } catch(err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+// 댓글 작성
+router.post('/:id/comment', isLoggedIn, (req,res,next) => { // :id => 게시글의 아이디
+  try {
+    const post = await db.Post.findOne({ where: { id: req.params.id} });
+    if(!post) {
+      return res.status(404).send('게시물이 존재하지않습니다.');
+    }
+    const newComment = await db.Comment.create({
+      PostId: post.id, // post.addComment(newComment.id) 작업을 이걸로 한번에
+      UserId: req.user.id,
+      content: req.body.content,
+    });
+    //await post.addComment(newComment.id);
+    const comment = await db.Comment.findOne({
+      where: {
+        id: newComment.id,
+      },
+      include: [{
+        model: db.User,
+        attributes:['id','nickname'],
+      }]
+    });
+    return res.json(comment);
+  } catch(err) {
+    next(err);
+  }
+});
+
 module.exports = router;
