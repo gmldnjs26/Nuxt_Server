@@ -38,16 +38,92 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
       })));
       await newPost.addHashtags(result.map(r => r[0]));
     }
+    if (req.body.image) {
+      if (Array.isArray(req.body.image)) { // 배열이냐?
+        const images = await Promise.all(req.body.image.map((image) => {
+          return db.Image.create({ src: image, PostId: newPost.id});
+        }))
+      } else {
+        const image = await db.Image.create({ src: req.body.image, PostId: newPost.id});
+      }
+    }
     const fullPost = await db.Post.findOne({
       where: { id: newPost.id },
       include: [{ // 게시글은 사용자에게 속해 있는 관계가 있으므로 그 정보를 자동으로 포함해주는 기능 include
         model: db.User,
         attributes: ['id', 'nickname'], // id, 닉네임만 가지고 오도록 제한할 수 있다.
+      }, {
+        model: db.Image,
       }],
     });
     return res.json(fullPost);
   } catch (err) {
     console.error(err);
+    next(err);
+  }
+});
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await db.Post.destory({
+      where: {
+        id: req.params.id,
+      }
+    });
+  } catch(err) {
+    console.error(err);
+    next(err);
+  }
+})
+
+// 댓글 가져오기
+router.get('/:id/comments', async (req, res, next) => {
+  try {
+    const post = await db.Post.findOne({ where: { id: req.params.id } });
+    if(!post) {
+      return res.status(404).send('게시물이 존재하지않습니다.');
+    }
+    const comments = await db.Comment.findAll({
+      where: {
+        PostId: req.params.id,
+      },
+      include: [{
+        model: db.User,
+        attributes:['id','nickname'],
+      }],
+      order: [['createdAt', 'ASC']], // 다른 정렬조건도 있을수있으니깐
+    });
+    res.json(comments)
+  } catch(err) {
+    console.log(err);
+    next(err);
+  }
+});
+
+// 댓글 작성
+router.post('/:id/comment', isLoggedIn, async (req,res,next) => { // :id => 게시글의 아이디
+  try {
+    const post = await db.Post.findOne({ where: { id: req.params.id} });
+    if(!post) {
+      return res.status(404).send('게시물이 존재하지않습니다.');
+    }
+    const newComment = await db.Comment.create({
+      PostId: post.id, // post.addComment(newComment.id) 작업을 이걸로 한번에
+      UserId: req.user.id,
+      content: req.body.content,
+    });
+    //await post.addComment(newComment.id);
+    const comment = await db.Comment.findOne({
+      where: {
+        id: newComment.id,
+      },
+      include: [{
+        model: db.User,
+        attributes:['id','nickname'],
+      }]
+    });
+    return res.json(comment);
+  } catch(err) {
     next(err);
   }
 });
