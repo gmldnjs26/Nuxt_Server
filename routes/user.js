@@ -6,6 +6,12 @@ const { isLoggedIn, isNotLoggedIn } = require('./middlewares');
 
 const router = express.Router();
 
+//사용자 정보 가져오기
+router.get('/', isLoggedIn, async (req, res, next) => {
+  const user = req.user; // req에 user는 deserialized가 만들어준 친구
+  res.json(user);
+})
+
 router.post('/', isNotLoggedIn, async (req, res, next) => { // 회원가입
   try {
     const hash = await bcrypt.hash(req.body.password, 12);
