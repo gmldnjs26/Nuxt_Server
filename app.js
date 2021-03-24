@@ -9,6 +9,7 @@ const db = require('./models');
 const passportConfig = require('./passport');
 const userRouter = require('./routes/user');
 const postRouter = require('./routes/post');
+const postsRouter = require('./routes/posts');
 const app = express();
 
 db.sequelize.sync();
@@ -17,7 +18,7 @@ passportConfig();
 // app.use req, res를 조작한다 (미들웨어)
 app.use(morgan('dev')); // 요청이 왔을때 기록을 해주는 모듈
 app.use(cors({
-  origin: 'http://localhost:52841',
+  origin: 'http://localhost:3000',
   credentials: true,
 }));
 app.use('/', express.static('uploads')); //(주소를 uploads -> / 바꿈 앞단뒷단 주소를 다르게 해야 보안 강화) 프론트에서 정적자원에 접근할 수 있다.
@@ -42,6 +43,7 @@ app.get('/', (req, res) => {
 
 app.use('/user', userRouter);
 app.use('/post', postRouter);
+app.use('/posts',postsRouter);
 
 // router 실행전에는 deserialized 가 실행됨
 app.post('/post', (req, res) => {
@@ -50,6 +52,6 @@ app.post('/post', (req, res) => {
   }
 });
 
-app.listen(3086, () => {
+app.listen(3087, () => {
   console.log(`백엔드 서버 ${3086}번 포트에서 작동중.`);
 });

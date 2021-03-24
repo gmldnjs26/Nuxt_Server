@@ -38,11 +38,22 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
       })));
       await newPost.addHashtags(result.map(r => r[0]));
     }
+    if (req.body.image) {
+      if (Array.isArray(req.body.image)) { // 배열이냐?
+        const images = await Promise.all(req.body.image.map((image) => {
+          return db.Image.create({ src: image, PostId: newPost.id});
+        }))
+      } else {
+        const image = await db.Image.create({ src: req.body.image, PostId: newPost.id});
+      }
+    }
     const fullPost = await db.Post.findOne({
       where: { id: newPost.id },
       include: [{ // 게시글은 사용자에게 속해 있는 관계가 있으므로 그 정보를 자동으로 포함해주는 기능 include
         model: db.User,
         attributes: ['id', 'nickname'], // id, 닉네임만 가지고 오도록 제한할 수 있다.
+      }, {
+        model: db.Image,
       }],
     });
     return res.json(fullPost);
@@ -51,6 +62,19 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
     next(err);
   }
 });
+
+router.delete('/:id', async (req, res, next) => {
+  try {
+    await db.Post.destory({
+      where: {
+        id: req.params.id,
+      }
+    });
+  } catch(err) {
+    console.error(err);
+    next(err);
+  }
+})
 
 // 댓글 가져오기
 router.get('/:id/comments', async (req, res, next) => {
@@ -77,7 +101,7 @@ router.get('/:id/comments', async (req, res, next) => {
 });
 
 // 댓글 작성
-router.post('/:id/comment', isLoggedIn, (req,res,next) => { // :id => 게시글의 아이디
+router.post('/:id/comment', isLoggedIn, async (req,res,next) => { // :id => 게시글의 아이디
   try {
     const post = await db.Post.findOne({ where: { id: req.params.id} });
     if(!post) {
