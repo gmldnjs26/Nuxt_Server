@@ -56,6 +56,19 @@ router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
         attributes: ['id', 'nickname'], // id, 닉네임만 가지고 오도록 제한할 수 있다.
       }, {
         model: db.Image,
+      },{
+        model: db.User,
+        as: 'Likers',
+        attributes: ['id'],
+      }, {
+        model: db.Post,
+        as: 'Retweet',
+        include: [{
+          model: db.User,
+          attributes: ['id', 'nickname'],
+        }, {
+          model: db.Image,
+        }],
       }],
     });
     return res.json(fullPost);
