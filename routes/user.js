@@ -142,15 +142,19 @@ router.post('/logout', isLoggedIn, (req, res) => { // 실제 주소는 /user/log
 });
 
 router.get('/:id/posts', async (req, res, next) => {
-  console.log("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@v")
   try {
     let where = {
       UserId: parseInt(req.params.id, 10),
-      RetweetId: null,
     };
     if (parseInt(req.query.lastId, 10)) {
-      where[db.Sequelize.Op.lt] = parseInt(req.query.lastId, 10);
-    }
+      where = {
+        UserId: parseInt(req.params.id, 10),
+        id: {
+          [db.Sequelize.Op.lt]: parseInt(req.query.lastId, 10),
+        }, 
+      };
+    };
+    console.log(where);
     const posts = await db.Post.findAll({
       where,
       include: [{
