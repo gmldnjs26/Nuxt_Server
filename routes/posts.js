@@ -22,6 +22,13 @@ router.get('/', async (req, res, next) => { // GET /posts?offset=10&limit=10
       }, {
         model: db.Image,
       }, {
+        model: db.Comment,
+        attributes: ['content'],
+        include: [{
+          model: db.User,
+          attributes: ['id', 'nickname'],
+        }]
+      },{
         model: db.User,
         as: 'Likers',
         attributes: ['id', 'nickname'],

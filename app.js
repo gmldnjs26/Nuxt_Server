@@ -51,7 +51,7 @@ app.use('/hashtag',hashtagRouter);
 // router 실행전에는 deserialized 가 실행됨
 app.post('/post', (req, res) => {
   if (req.isAuthenticated()) {
-
+    console.log('인증되지않은 사용자입니다.')
   }
 });
 
