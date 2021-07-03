@@ -28,7 +28,7 @@ router.get('/', async (req, res, next) => { // GET /posts?offset=10&limit=10
           model: db.User,
           attributes: ['id', 'nickname'],
         }]
-      },{
+      }, {
         model: db.User,
         as: 'Likers',
         attributes: ['id', 'nickname'],
@@ -45,6 +45,7 @@ router.get('/', async (req, res, next) => { // GET /posts?offset=10&limit=10
       order: [['createdAt', 'DESC']],
       limit: parseInt(req.query.limit, 10) || 10,
     });
+    console.log(posts[posts.length - 1].Images)
     res.json(posts);
   } catch (err) {
     console.error(err);

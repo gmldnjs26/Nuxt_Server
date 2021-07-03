@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require('multer');
+const fs = require('fs')
 const path = require('path'); // node에서 제공하는 기본 모듈
 const { User } = require('../models');
 
@@ -10,13 +11,23 @@ const router = express.Router();
 
 const upload = multer({
   storage: multer.diskStorage({
-    destination(req, file, done) { // 어디다 저장할지
-      done(null, 'uploads');
+    destination(req, file, cb) { // 어디다 저장할지
+      if (!fs.existsSync('uploads')) {
+        fs.mkdir('uploads', function (err) {
+          if (err) {
+            console.log(err)
+          } else {
+            cb(null, 'uploads')
+          }
+        })
+      } else {
+        cb(null, 'uploads')
+      }
     },
-    filename(req, file, done) {
+    filename(req, file, cb) {
       const ext = path.extname(file.originalname);
       const basename = path.basename(file.originalname, ext); // 제로초.png, basename = 제로초, ext = .png
-      done(null, basename + Date.now() + ext);
+      cb(null, basename + Date.now() + ext);
     },
   }),
   limit: { fileSize: 20 * 1024 * 1024 },
@@ -25,9 +36,27 @@ router.post('/images', isLoggedIn, upload.array('image'), (req, res) => {
   console.log(req.files);
   res.json(req.files.map(v => v.filename));
 });
+// Delete picture
+router.delete('/:name/images', (req, res, next) => {
+  const {
+    name
+  } = req.params
+  fs.unlink(path.join('uploads', name), (err) => {
+    if (err) {
+      console.log(err)
+      next(err)
+    } else {
+      res.send({
+        status: 200,
+        name
+      })
+    }
+  })
+})
 
 router.post('/', isLoggedIn, async (req, res, next) => { // POST /post
   try {
+    console.log(req);
     const hashtags = req.body.content.match(/#[^\s#]+/g);
     const newPost = await db.Post.create(
     {
